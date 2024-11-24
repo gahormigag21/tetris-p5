@@ -1,43 +1,74 @@
 let cols = 10; // Número de columnas del tablero
 let rows = 20; // Número de filas del tablero
 let score = 0; // Puntaje inicial
+let dificultad = 30;
+let paused = false;
 let grid = []; // Matriz del tablero
 let currentPiece; // Pieza actual
 let savedPiece = null; // Pieza guardada
 let tetrominoes = []; // Lista de Tetrominos
 let colors = []; 
 let pieceHeld = false; // Indicador de si se ha holdeado una pieza
+let piecePool = []; // Pool de piezas
+let tetrisMusic;
+let moveDelay = 0;
 
 
+function preload() {
+  // Cargar la música desde la URL
+  tetrisMusic = loadSound('assets/song.mp3');
+
+}
 
 function setup() {
-  createCanvas(510, 600);
+  createCanvas(550, 600);  
+  tetrisMusic.setLoop(true); // La música se repetirá automáticamente
+  tetrisMusic.play(); // Inicia la reproducción
+  volumeSlider = createSlider(0, 1, 0.5, 0.01); // (min, max, inicial, paso)
+  volumeSlider.position(350, 500);
+
+
   frameRate(60); // Velocidad del juego
   initGrid();
   initColors();
   initTetrominoes();
+  refillPool(); // Crear y revolver el pool
   spawnPiece();
 
   //Letrero Hold
   textSize(24);
   textAlign(CENTER, CENTER);
   text('Hold', 420, 20);
+
 }
 
 function draw() {
+  tetrisMusic.setVolume(volumeSlider.value());
   // Fondo y otras funciones
   drawGrid();
   drawPiece();
+  drawNextPiece(); // Dibujar la próxima pieza
 
   // Mostrar el puntaje
-  // fill(0);
+
+  
+  fill(255);
+  rect(340,100,165,150);
+  fill(0);
   textSize(24);
   textAlign(LEFT, TOP);
-  text('Puntaje: ' + score, 370, 210);
+  text('Puntaje: ' + score, 350, 210);
   drawHeldPiece();
+  if(paused){
+      
+    fill(255);
+    textSize(50);
+    textAlign(CENTER, CENTER);
+    text('||', (cols*30) / 2, (rows*30) / 2);
+  }
 
   // Controlar el flujo del juego
-  if (frameCount % 10 == 0) {
+  if (frameCount % dificultad == 0) {
     if (isGameOver()) {
       noLoop(); // Detener el juego
       fill(255, 0, 0);
@@ -48,6 +79,23 @@ function draw() {
       movePiece(0, 1); // Mover hacia abajo
     }
   }
+  if (moveDelay == 0) {
+      if (keyIsDown(LEFT_ARROW)) {
+        movePiece(-1, 0);
+        moveDelay = 5;
+      }
+      if (keyIsDown(RIGHT_ARROW)) {
+        movePiece(1, 0);
+        moveDelay = 5;
+      }
+      if (keyIsDown(DOWN_ARROW)) {
+        movePiece(0, 1);
+        moveDelay = 8;
+      }
+
+    }else{
+      moveDelay--;
+    }
 }
 
 
@@ -76,22 +124,47 @@ function initTetrominoes() {
 }
 function initColors() {
   colors = [
-    '#FF0D72', // Color para T
-    '#0D73FF', // Color para O
-    '#F5FF0D', // Color para S
-    '#0DFF57', // Color para Z
-    '#F50D0D', // Color para I
-    '#FF7A0D', // Color para L
-    '#0DFF9D'  // Color para J
+    '#A000F0', // Color para T
+    '#F0F000', // Color para O
+    '#00F100', // Color para S
+    '#F00000', // Color para Z
+    '#00F0F0', // Color para I
+    '#F0A000', // Color para L
+    '#0000F0'  // Color para J
   ];
 }
 
+function refillPool() {
+  piecePool = [];
+  for (let i = 0; i < 2; i++) { // Agregar dos copias de cada pieza
+    for (let j = 0; j < tetrominoes.length; j++) {
+      piecePool.push(j);
+    }
+  }
+  shuffleArray(piecePool); // Revolver el pool
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
 function spawnPiece() {
-  // Seleccionar un tetromino aleatorio
-  let index = floor(random(tetrominoes.length));
+  let index;
+  if (piecePool.length == 1) {
+    index = piecePool.pop();  // Tomar la última pieza del pool
+    refillPool(); // Rellenar el pool si está vacío
+    dificultad=dificultad-5;//aumentar dificultad
+    if ((dificultad)<1) dificultad=3;
+  }else{
+    index = piecePool.pop();
+  }
   
   currentPiece = {
     shape: tetrominoes[index],
+    xini:floor(cols / 2) - floor(tetrominoes[index][0].length / 2),
     x: floor(cols / 2) - floor(tetrominoes[index][0].length / 2), // Centrar horizontalmente
     y: 0,
     color: colors[index]
@@ -114,6 +187,7 @@ function drawGrid() {
       }
 
       rect(x * 30, y * 30, 30, 30);
+      
       strokeWeight(1);
       stroke(5);
 
@@ -136,15 +210,47 @@ function drawPiece() {
 
 function drawHeldPiece() {
   fill(255);
-  rect(340,40,165,150);
+  rect(340,40,165,160);
+  fill(0);
   // Si hay una pieza guardada, dibujarla en la parte superior
   if (savedPiece) {
+  let offsetX = 375; // Posición horizontal del contenedor
+  let offsetY = 50; // Posición vertical del contenedor
+
     for (let y = 0; y < savedPiece.shape.length; y++) {
       for (let x = 0; x < savedPiece.shape[y].length; x++) {
         if (savedPiece.shape[y][x] === 1) {
           fill(savedPiece.color);
           stroke(50);
-          rect((x + 12) * 30, (y + 2) * 30, 30, 30); // Dibujar pieza en la parte superior
+          rect((offsetX + x * 30), (offsetY + y * 30)+25, 30, 30);
+        }
+      }
+    }
+  
+  }
+}
+function drawNextPiece() {
+  if (piecePool.length > 0) {
+    let nextPieceIndex = piecePool[piecePool.length - 1]; // Índice de la próxima pieza
+    let nextPieceShape = tetrominoes[nextPieceIndex]; // Forma de la próxima pieza
+    let nextPieceColor = colors[nextPieceIndex]; // Color de la próxima pieza
+
+    // Dibujar el contenedor de la próxima pieza
+    fill(255);
+    rect(340, 270, 165, 150); // Área de vista previa
+    fill(0);
+    textSize(24);
+    textAlign(CENTER, TOP);
+    text('Next', 420, 280);
+
+    // Dibujar la próxima pieza dentro del contenedor
+    let offsetX = 375; // Posición horizontal del contenedor
+    let offsetY = 300; // Posición vertical del contenedor
+    for (let y = 0; y < nextPieceShape.length; y++) {
+      for (let x = 0; x < nextPieceShape[y].length; x++) {
+        if (nextPieceShape[y][x]) {
+          fill(nextPieceColor);
+          rect((offsetX + x * 30), (offsetY + y * 30)+25, 30, 30);
         }
       }
     }
@@ -162,15 +268,22 @@ function movePiece(dx, dy) {
 }
 
 function keyPressed() {
-  if (keyCode == LEFT_ARROW) movePiece(-1, 0);
-  if (keyCode == RIGHT_ARROW) movePiece(1, 0);
   if (keyCode == DOWN_ARROW) movePiece(0, 1);
   if (keyCode == UP_ARROW) rotatePiece("hor"); // Rotar pieza sentido horario
   if (key == ('z'||'Z')) rotatePiece("ant"); // Rotar pieza sentido antihorario
   if (keyCode == 32) dropPiece();// Espaciadora para bajar
   if (key == 'c' || key == 'C') holdPiece(); // Función para holdear la pieza
+  if (key == 'p' || key == 'P') pausar();
 }
-
+function pausar(){ // Presiona 'P' para pausar/reanudar
+  paused = !paused; // Cambiar estado de pausa
+  if (paused) {
+    noLoop(); // Detener el juego
+    
+  } else {
+    loop(); // Reanuda el dibujo
+  }
+}
 function holdPiece() {
   if (!pieceHeld) {
     if (savedPiece === null) {
@@ -182,6 +295,7 @@ function holdPiece() {
       let temp = currentPiece;
       currentPiece = savedPiece;
       currentPiece.y=0;
+      currentPiece.x=currentPiece.xini;
       savedPiece = temp;
     }
     pieceHeld = true; // Marca que la pieza ha sido holdeada
@@ -226,8 +340,10 @@ function fixPiece() {
       }
     }
   }
+  moveDelay+=5;
   // Generar una nueva pieza
   spawnPiece();
+  
   // Revisar líneas completas
   checkLines();
 }
@@ -276,13 +392,17 @@ function rotatePiece(dir) {
 
 function dropPiece() {
   while (!isColliding(0, 1)) {
-    movePiece(0, 1);  // Mover la pieza hacia abajo hasta que no pueda más
+    movePiece(0, 1); // Mover la pieza hacia abajo hasta que no pueda más
   }
-  fixPiece();  // Fijar la pieza cuando ya no pueda bajar más
+  noLoop(); // Pausar
+  setTimeout(() => {
+    loop(); // Reanudar después de medio segundo
+  }, 500);
 }
 
 
 function checkLines() {
+  let lineasHechas=0;
   for (let y = rows - 1; y >= 0; y--) {
     if (grid[y].every(cell => cell !== 0)) {
       // Eliminar línea completa
@@ -292,9 +412,36 @@ function checkLines() {
       y++; // Revisar de nuevo la misma fila
 
       // Incrementar el puntaje por cada línea completada
-      score += 100; // Puedes ajustar este valor según el puntaje que desees por línea completada
+      score += 10; // Puedes ajustar este valor según el puntaje que desees por línea completada
+      lineasHechas++;
+
     }
   }
+  if (lineasHechas !== 0) {
+    fill(255);
+    textSize(32);
+    textAlign(CENTER, CENTER);
+    
+    if (lineasHechas == 1) text('Nice!', (cols * 30) / 2, (rows * 30) / 2);
+    if (lineasHechas == 2) {
+      score+=5;
+      text('Double!!', (cols * 30) / 2, (rows * 30) / 2);
+    }
+    if (lineasHechas == 3) {
+      score+=10;
+      text('Triple!!!', (cols * 30) / 2, (rows * 30) / 2);
+    }
+    if (lineasHechas == 4) {
+      score+=20;
+      text('Tetris!!!!', (cols * 30) / 2, (rows * 30) / 2);
+    }
+  
+    noLoop(); // Pausar
+    setTimeout(() => {
+      loop(); // Reanudar después de .5 segundos
+    }, 300);
+  }
+  
 }
 
 
