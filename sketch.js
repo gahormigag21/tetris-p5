@@ -1,7 +1,8 @@
+let canvas;
 let cols = 10; // Número de columnas del tablero
 let rows = 20; // Número de filas del tablero
 let score = 0; // Puntaje inicial
-let dificultad = 30;
+let dificultad = 50;
 let paused = false;
 let grid = []; // Matriz del tablero
 let currentPiece; // Pieza actual
@@ -11,21 +12,31 @@ let colors = [];
 let pieceHeld = false; // Indicador de si se ha holdeado una pieza
 let piecePool = []; // Pool de piezas
 let tetrisMusic;
+let playButton;
+let isPlaying = false;
 let moveDelay = 0;
+let font;
 
 
 function preload() {
   // Cargar la música desde la URL
   tetrisMusic = loadSound('assets/song.mp3');
+  tetrisMusic.setLoop(true); // La música se repetirá automáticamente
+
+  font = loadFont('assets/PixelifySans-VariableFont_wght.ttf'); // Carga la fuente
 
 }
 
 function setup() {
-  createCanvas(550, 600);  
-  tetrisMusic.setLoop(true); // La música se repetirá automáticamente
-  tetrisMusic.play(); // Inicia la reproducción
-  volumeSlider = createSlider(0, 1, 0.5, 0.01); // (min, max, inicial, paso)
-  volumeSlider.position(350, 500);
+  canvas = createCanvas(550, 600);  
+
+  playButton = createButton('▶ Play Music');
+  playButton.position(0 , 0);
+  playButton.mousePressed(togglePlayPause); // Asociar acción al clic
+
+  volumeSlider = createSlider(0, 1, 0.3, 0.01); // (min, max, inicial, paso)
+  volumeSlider.position(0, 0);
+  
 
 
   frameRate(60); // Velocidad del juego
@@ -36,19 +47,28 @@ function setup() {
   spawnPiece();
 
   //Letrero Hold
+  push();
+  fill(0);
   textSize(24);
+  strokeWeight(2.5);
+  
   textAlign(CENTER, CENTER);
   text('Hold', 420, 20);
+  pop();
 
 }
 
 function draw() {
+
   tetrisMusic.setVolume(volumeSlider.value());
+
   // Fondo y otras funciones
   drawGrid();
   drawPiece();
   drawNextPiece(); // Dibujar la próxima pieza
 
+  
+  
   // Mostrar el puntaje
 
   
@@ -64,7 +84,18 @@ function draw() {
     fill(255);
     textSize(50);
     textAlign(CENTER, CENTER);
-    text('||', (cols*30) / 2, (rows*30) / 2);
+    push();
+    textFont(font);
+    text('Pausado', (cols*30) / 2, (rows*30) / 2);
+    text('||', (cols*30) / 2, (rows*35) / 2);
+    pop();
+    
+    if (isPlaying) {
+
+      tetrisMusic.pause();
+      
+    } 
+
   }
 
   // Controlar el flujo del juego
@@ -98,7 +129,22 @@ function draw() {
     }
 }
 
-
+function togglePlayPause() {
+  if (!isPlaying) {
+    // Reproducir música por primera vez o reanudarla
+    tetrisMusic.play();
+    playButton.html('⏸ Pause Music'); // Cambiar el texto del botón
+    isPlaying = true;
+  } else if (tetrisMusic.isPlaying()) {
+    // Pausar la música
+    tetrisMusic.pause();
+    playButton.html('▶ Resume Music'); // Cambiar el texto del botón
+  } else {
+    // Reanudar la música
+    tetrisMusic.play();
+    playButton.html('⏸ Pause Music'); // Cambiar el texto del botón
+  }
+}
 
 function initGrid() {
   // Crear matriz del tablero
@@ -157,7 +203,9 @@ function spawnPiece() {
     index = piecePool.pop();  // Tomar la última pieza del pool
     refillPool(); // Rellenar el pool si está vacío
     dificultad=dificultad-5;//aumentar dificultad
-    if ((dificultad)<1) dificultad=3;
+    if ((dificultad)<1) {
+      dificultad=3;
+    }
   }else{
     index = piecePool.pop();
   }
@@ -197,6 +245,7 @@ function drawGrid() {
 
 
 function drawPiece() {
+  push();
   for (let y = 0; y < currentPiece.shape.length; y++) {
     for (let x = 0; x < currentPiece.shape[y].length; x++) {
       if (currentPiece.shape[y][x] === 1) {
@@ -206,9 +255,11 @@ function drawPiece() {
       }
     }
   }
+  pop();
 }
 
 function drawHeldPiece() {
+  push();
   fill(255);
   rect(340,40,165,160);
   fill(0);
@@ -228,6 +279,7 @@ function drawHeldPiece() {
     }
   
   }
+  pop();
 }
 function drawNextPiece() {
   if (piecePool.length > 0) {
@@ -235,6 +287,7 @@ function drawNextPiece() {
     let nextPieceShape = tetrominoes[nextPieceIndex]; // Forma de la próxima pieza
     let nextPieceColor = colors[nextPieceIndex]; // Color de la próxima pieza
 
+    push();
     // Dibujar el contenedor de la próxima pieza
     fill(255);
     rect(340, 270, 165, 150); // Área de vista previa
@@ -242,6 +295,7 @@ function drawNextPiece() {
     textSize(24);
     textAlign(CENTER, TOP);
     text('Next', 420, 280);
+
 
     // Dibujar la próxima pieza dentro del contenedor
     let offsetX = 375; // Posición horizontal del contenedor
@@ -254,6 +308,7 @@ function drawNextPiece() {
         }
       }
     }
+    pop();
   }
 }
 
@@ -274,6 +329,7 @@ function keyPressed() {
   if (keyCode == 32) dropPiece();// Espaciadora para bajar
   if (key == 'c' || key == 'C') holdPiece(); // Función para holdear la pieza
   if (key == 'p' || key == 'P') pausar();
+  if (key == 'r' || key == 'R') resetear();
 }
 function pausar(){ // Presiona 'P' para pausar/reanudar
   paused = !paused; // Cambiar estado de pausa
@@ -282,7 +338,21 @@ function pausar(){ // Presiona 'P' para pausar/reanudar
     
   } else {
     loop(); // Reanuda el dibujo
+    if (isPlaying) {
+      tetrisMusic.play();
+    }
   }
+}
+function resetear(){
+  loop();
+  initGrid();
+  currentPiece=null;
+  savedPiece=null;
+  dificultad =50;
+  score=0;
+  refillPool();
+  spawnPiece();
+
 }
 function holdPiece() {
   if (!pieceHeld) {
@@ -340,7 +410,7 @@ function fixPiece() {
       }
     }
   }
-  moveDelay+=5;
+  moveDelay+=1;
   // Generar una nueva pieza
   spawnPiece();
   
@@ -397,7 +467,7 @@ function dropPiece() {
   noLoop(); // Pausar
   setTimeout(() => {
     loop(); // Reanudar después de medio segundo
-  }, 500);
+  }, 50);
 }
 
 

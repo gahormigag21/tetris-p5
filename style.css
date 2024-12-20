@@ -1,8 +1,90 @@
-html, body {
+
+body {
+  display: flex;
+  justify-self: start;
   margin: 0;
   padding: 0;
+  background-color: rgb(165, 197, 245);
+}
+main{
+  padding-top: 10%;
+  padding-left: 10%;
+  background-color: rgb(165, 197, 245);
+}
+input{
+  top: 60% !important;
+  left: 15.5% !important;
+  
+}
+button{
+  top: 63% !important;
+  left: 14.5% !important;
+  font-family: 'Arial', sans-serif;
+  padding: 12px 24px; /* Espaciado del botón */
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff; /* Color del texto */
+  background-color: #007BFF; /* Color de fondo */
+  border: none;
+  border-radius: 50px; /* Bordes redondeados */
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s; /* Transiciones suaves */
+  
+}
+button:hover {
+  background-color: #0056b3; /* Color al pasar el mouse */
+  transform: scale(1.05); /* Agranda ligeramente */
+}
+button:active {
+  transform: scale(0.95); /* Efecto al hacer clic */
 }
 
 canvas {
   display: block;
+  margin: 0   auto;
+  background-color: rgb(165, 197, 245);
+}
+.controls {
+  font-family: Arial, sans-serif;
+  min-width: 250px;
+  background: #f9f9f9;
+  border-radius: 15px;
+  padding: 50px;
+  box-shadow: 0 15px 15px rgba(0, 0, 0, 0.2);
+  margin: 120px 100px 110px 150px;
+  padding-bottom: 150px;
+
+}
+
+.controls p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  margin: 10px 0;
+}
+
+.controls i {
+  color: #007BFF;
+  font-size: 1.2rem;
+}
+
+.controls strong {
+  background: #007BFF;
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+h2 {
+  font-family: 'Arial', sans-serif;
+  font-size: 1.8rem; 
+  font-weight: bold; 
+  color: #333; 
+  text-align: center; 
+  margin-bottom: 30px; 
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+  border-bottom: 2px solid #007BFF; /* Línea decorativa inferior */
+  padding-bottom: 10px; /* Espaciado interno para la línea */
 }
